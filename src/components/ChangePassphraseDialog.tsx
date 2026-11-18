@@ -7,7 +7,7 @@ import { useVault } from '@/lib/vault'
 import { WrongSecretError } from '@/lib/crypto'
 import { useI18n } from '@/i18n'
 
-const MIN_PASSPHRASE = 10
+const MIN_PASSPHRASE = 1
 
 export function ChangePassphraseDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o: boolean) => void }) {
   const { t } = useI18n()

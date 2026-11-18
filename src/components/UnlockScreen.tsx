@@ -13,7 +13,7 @@ import { preloadAfterLockScreen } from '@/lib/lazy'
 import { t as translate, useI18n } from '@/i18n'
 import type { MessageKey } from '@/i18n/en'
 
-const MIN_PASSPHRASE = 10
+const MIN_PASSPHRASE = 1
 
 /** The backdrop is a faint wall of ciphertext — exactly what the server sees. */
 function CipherWall() {
