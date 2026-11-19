@@ -5,6 +5,7 @@ import { Tooltip } from '@/components/ui/tooltip'
 import { useI18n } from '@/i18n'
 import type { Note, NotePatch } from '@/lib/notes'
 import { ColorPicker } from './ColorPicker'
+import { ReminderMenu } from './ReminderMenu'
 import { ShareDialog } from './ShareDialog'
 
 interface Props {
@@ -60,16 +61,22 @@ export function NoteActions({ note, onChange, onDeleteForever, onCopy }: Props) 
   return (
     <>
       <ColorPicker value={note.color} onChange={(color) => onChange({ color })} />
+      <ReminderMenu note={note} onChange={onChange} variant="icon" />
       <Act
         label={note.archived ? t('act.unarchive') : t('act.archive')}
         onClick={() => onChange({ archived: !note.archived, pinned: false })}
       >
         {note.archived ? <ArchiveRestore /> : <Archive />}
       </Act>
-      <Act label={t('act.share')} onClick={() => setSharing(true)}>
-        <Share2 />
-      </Act>
-      <ShareDialog note={note} open={sharing} onOpenChange={setSharing} />
+      {/* Shared links are served by the Worker: not in the demo. */}
+      {import.meta.env.VITE_DEMO !== '1' && (
+        <>
+          <Act label={t('act.share')} onClick={() => setSharing(true)}>
+            <Share2 />
+          </Act>
+          <ShareDialog note={note} open={sharing} onOpenChange={setSharing} />
+        </>
+      )}
       <Act label={t('act.copy')} onClick={onCopy}>
         <Copy />
       </Act>

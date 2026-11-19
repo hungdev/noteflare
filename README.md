@@ -11,7 +11,7 @@
 
 A simple, private, serverless notes app — end-to-end encrypted, completely free to run, and yours to customize.
 
-[Documentation](https://noteflare.homielab.com) · [English](README.md) · [Tiếng Việt](README.vi.md)
+[Documentation](https://noteflare.homielab.com) · [Try the demo](https://noteflare.homielab.com/demo/) · [English](README.md) · [Tiếng Việt](README.vi.md)
 
 [![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/homielab/noteflare)
 
@@ -32,7 +32,7 @@ A simple, private, serverless notes app — end-to-end encrypted, completely fre
 - 💸 **Completely free to run**: one Worker, one D1 database, Cloudflare Access — all on the free plan.
 - 🎨 **Yours to customize**: plain React, Tailwind and shadcn/ui, a small Hono API and plain SQL migrations.
 - 📝 **Markdown notes**: headings, tables, quotes, syntax-highlighted code and `- [ ]` checklists you can tick right on the card.
-- 📌 **Organize your way**: pin, drag notes into the order you want, 8 paper colors, labels, archive, and a trash that empties itself after 30 days. Select several notes, or all of them, and label them or move them to the trash in one go; rename or delete a label everywhere, or make a copy of a note.
+- 📌 **Organize your way**: pin, drag notes into the order you want, 8 paper colors, labels, reminders with a due view and notifications while open, archive, and a trash that empties itself after 30 days. Select several notes, or all of them, and label them or move them to the trash in one go; rename or delete a label everywhere, or make a copy of a note.
 - 📥 **Drag-and-drop import**: drop a folder of Markdown (an Obsidian vault works), a Google Keep export (with its images), or an Evernote, Simplenote or Standard Notes export, and every note arrives encrypted.
 - 📤 **Export and backup**: download your notes as Markdown, or as an encrypted backup you can restore later.
 - 🖼️ **Encrypted images and files** (optional): attach images, PDFs or any other file, encrypted before upload and stored in your own R2 bucket. Browse every image in one gallery, with a Files tab for the rest.

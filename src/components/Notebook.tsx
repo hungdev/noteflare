@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { flushSync } from 'react-dom'
-import { Archive, Check, Coffee, Download, FileInput, Fingerprint, FileUp, FolderUp, HardDriveDownload, Images, Info, Keyboard, KeyRound, Languages, LayoutGrid, Lock, LogOut, Moon, Pencil, Plug, Plus, RefreshCw, Rows3, Search, SquareCheckBig, StickyNote, Sun, Tag, Trash2, X } from 'lucide-react'
+import { Archive, Bell, Check, Coffee, Download, FileInput, Fingerprint, FileUp, FolderUp, HardDriveDownload, Images, Import, Info, Keyboard, KeyRound, Languages, LayoutGrid, Lock, LogOut, Moon, Pencil, Plug, Plus, RefreshCw, Rows3, Search, SquareCheckBig, StickyNote, Sun, Tag, Trash2, X } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { Tooltip, TooltipProvider } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
 import { useVault } from '@/lib/vault'
@@ -34,8 +34,9 @@ import { themeTransition } from '@/lib/motion'
 import { ImportDropzone, type ImportHandle } from './ImportDropzone'
 import { ImageLibrary } from './ImageLibrary'
 import { scanLibrary } from '@/lib/library'
+import { useReminderAlerts, withReminders } from '@/lib/reminders'
 
-type View = { kind: 'notes' } | { kind: 'archive' } | { kind: 'trash' } | { kind: 'label'; label: string } | { kind: 'images' }
+type View = { kind: 'notes' } | { kind: 'archive' } | { kind: 'trash' } | { kind: 'label'; label: string } | { kind: 'images' } | { kind: 'reminders' }
 
 const byPosition = (a: Note, b: Note) => b.position - a.position
 const sameView = (a: View, b: View) => a.kind === b.kind && (a.kind !== 'label' || a.label === (b as typeof a).label)
@@ -151,11 +152,18 @@ export function Notebook({ dek }: { dek: CryptoKey }) {
     }
   }, [store.notes])
 
+  const reminderCount = useMemo(() => withReminders(store.notes).length, [store.notes])
+
   const library = useMemo(() => scanLibrary(store.notes), [store.notes])
   const showLibrary = attachments || library.images.length + library.files.length > 0
 
   const visible = useMemo(() => {
     const q = appliedQuery.trim().toLocaleLowerCase()
+    if (view.kind === 'reminders') {
+      return withReminders(store.notes).filter(
+        (n) => !q || `${n.title}\n${n.body}\n${n.labels.join(' ')}`.toLocaleLowerCase().includes(q),
+      )
+    }
     return store.notes
       .filter((n) => {
         switch (view.kind) {
@@ -170,8 +178,8 @@ export function Notebook({ dek }: { dek: CryptoKey }) {
       .sort(byPosition)
   }, [store.notes, view, appliedQuery])
 
-  const pinned = view.kind === 'trash' ? [] : visible.filter((n) => n.pinned)
-  const others = view.kind === 'trash' ? visible : visible.filter((n) => !n.pinned)
+  const pinned = view.kind === 'trash' || view.kind === 'reminders' ? [] : visible.filter((n) => n.pinned)
+  const others = view.kind === 'trash' || view.kind === 'reminders' ? visible : visible.filter((n) => !n.pinned)
   const ordered = [...pinned, ...others]
   sectionsRef.current = { pinned, others }
   byIdRef.current = store.byId
@@ -243,6 +251,7 @@ export function Notebook({ dek }: { dek: CryptoKey }) {
     // Nothing else moves when a note opens: only its card morphs into the editor.
     if (n) transition(() => setEditing(n), { id })
   }
+  useReminderAlerts(store.notes, open)
   const openFromLibrary = (id: string) => {
     const n = store.byId.get(id)
     if (n) transition(() => setEditing(n), 'none')
@@ -496,7 +505,7 @@ export function Notebook({ dek }: { dek: CryptoKey }) {
       <header className="sticky top-0 z-30 border-b bg-background/85 pt-[env(safe-area-inset-top)] backdrop-blur-md" style={{ viewTransitionName: 'site-header' }}>
         <div className="mx-auto flex h-16 max-w-[84rem] items-center gap-3 px-3 sm:px-6">
           <a
-            href="/"
+            href={import.meta.env.BASE_URL}
             className="flex shrink-0 items-center gap-2.5 rounded-md outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
             aria-label="NoteFlare"
             onClick={(e) => {
@@ -508,7 +517,7 @@ export function Notebook({ dek }: { dek: CryptoKey }) {
               window.scrollTo({ top: 0, behavior: prefersReducedMotion() ? 'auto' : 'smooth' })
             }}
           >
-            <img src="/favicon.svg" alt="" className="size-8" />
+            <img src={`${import.meta.env.BASE_URL}favicon.svg`} alt="" className="size-8" />
             <span className="text-lg font-semibold tracking-tight max-sm:hidden">NoteFlare</span>
           </a>
 
@@ -588,28 +597,35 @@ export function Notebook({ dek }: { dek: CryptoKey }) {
                   <RefreshCw /> <span className="truncate">{syncLabel}</span>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onSelect={() => importer.current?.pickFolder()}>
-                  <FolderUp /> {t('nb.importFolder')}
-                </DropdownMenuItem>
-                <DropdownMenuItem onSelect={() => importer.current?.pickFiles()}>
-                  <FileUp /> {t('nb.importFiles')}
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onSelect={() => {
-                    toast(t('imp.keepHint'))
-                    importer.current?.pickFolder()
-                  }}
-                >
-                  <StickyNote /> {t('nb.importKeep')}
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onSelect={() => {
-                    toast(t('imp.otherHint'))
-                    importer.current?.pickFiles()
-                  }}
-                >
-                  <FileInput /> {t('nb.importOther')}
-                </DropdownMenuItem>
+                <DropdownMenuSub>
+                  <DropdownMenuSubTrigger>
+                    <Import /> {t('nb.import')}
+                  </DropdownMenuSubTrigger>
+                  <DropdownMenuSubContent>
+                    <DropdownMenuItem onSelect={() => importer.current?.pickFolder()}>
+                      <FolderUp /> {t('nb.importFolder')}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onSelect={() => importer.current?.pickFiles()}>
+                      <FileUp /> {t('nb.importFiles')}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onSelect={() => {
+                        toast(t('imp.keepHint'))
+                        importer.current?.pickFolder()
+                      }}
+                    >
+                      <StickyNote /> {t('nb.importKeep')}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onSelect={() => {
+                        toast(t('imp.otherHint'))
+                        importer.current?.pickFiles()
+                      }}
+                    >
+                      <FileInput /> {t('nb.importOther')}
+                    </DropdownMenuItem>
+                  </DropdownMenuSubContent>
+                </DropdownMenuSub>
                 {(canInstall || needsIosHelp) && (
                   <DropdownMenuItem onSelect={() => (canInstall ? void install() : setIosHelpOpen(true))}>
                     <Download /> {t('nb.install')}
@@ -618,23 +634,32 @@ export function Notebook({ dek }: { dek: CryptoKey }) {
                 <DropdownMenuItem onSelect={() => (flush(), setBackupOpen(true))}>
                   <HardDriveDownload /> {t('nb.backup')}
                 </DropdownMenuItem>
+                <DropdownMenuSub>
+                  <DropdownMenuSubTrigger>
+                    <Languages /> <span className="flex-1">{t('nb.language')}</span>
+                    <span className="text-xs text-muted-foreground" lang={lang}>{LANGS.find((l) => l.code === lang)?.name}</span>
+                  </DropdownMenuSubTrigger>
+                  <DropdownMenuSubContent>
+                    {LANGS.map((l) => (
+                      <DropdownMenuItem key={l.code} onSelect={() => setLang(l.code)} lang={l.code}>
+                        <span className="grid size-4 place-items-center">{lang === l.code && <Check />}</span>
+                        {l.name}
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuSubContent>
+                </DropdownMenuSub>
                 <DropdownMenuSeparator />
-                <DropdownMenuLabel className="flex items-center gap-2">
-                  <Languages className="size-3.5" /> {t('nb.language')}
-                </DropdownMenuLabel>
-                {LANGS.map((l) => (
-                  <DropdownMenuItem key={l.code} onSelect={() => setLang(l.code)} lang={l.code}>
-                    <span className="grid size-4 place-items-center">{lang === l.code && <Check />}</span>
-                    {l.name}
-                  </DropdownMenuItem>
-                ))}
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onSelect={() => setIntOpen(true)}>
-                  <Plug /> {t('nb.integrations')}
-                </DropdownMenuItem>
-                <DropdownMenuItem onSelect={() => setPwOpen(true)}>
-                  <KeyRound /> {t('nb.changePassphrase')}
-                </DropdownMenuItem>
+                {/* The demo has no server for tokens, and its passphrase is fixed (shown in the banner). */}
+                {import.meta.env.VITE_DEMO !== '1' && (
+                  <>
+                    <DropdownMenuItem onSelect={() => setIntOpen(true)}>
+                      <Plug /> {t('nb.integrations')}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onSelect={() => setPwOpen(true)}>
+                      <KeyRound /> {t('nb.changePassphrase')}
+                    </DropdownMenuItem>
+                  </>
+                )}
                 {passkeySupport && (
                   <DropdownMenuItem onSelect={() => setPkOpen(true)}>
                     <Fingerprint /> {t('nb.passkeys')}
@@ -660,9 +685,11 @@ export function Notebook({ dek }: { dek: CryptoKey }) {
                 <DropdownMenuItem onSelect={() => transition(lock)}>
                   <Lock /> {t('nb.lockNow')}
                 </DropdownMenuItem>
-                <DropdownMenuItem onSelect={() => void handleSignOut()}>
-                  <LogOut /> {t('nb.signOut')}
-                </DropdownMenuItem>
+                {import.meta.env.VITE_DEMO !== '1' && (
+                  <DropdownMenuItem onSelect={() => void handleSignOut()}>
+                    <LogOut /> {t('nb.signOut')}
+                  </DropdownMenuItem>
+                )}
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
@@ -689,6 +716,15 @@ export function Notebook({ dek }: { dek: CryptoKey }) {
           </ul>
           </div>
           <ul className="flex shrink-0 gap-1 sm:gap-2">
+            {(reminderCount > 0 || view.kind === 'reminders') && (
+              <Chip
+                active={view.kind === 'reminders'}
+                onClick={() => go({ kind: 'reminders' })}
+                count={reminderCount}
+                icon={<Bell />}
+                label={t('rem.view')}
+              />
+            )}
             {showLibrary && <Chip active={view.kind === 'images'} onClick={() => go({ kind: 'images' })} count={library.images.length} icon={<Images />} label={t('nb.images')} />}
             <Chip active={view.kind === 'archive'} onClick={() => go({ kind: 'archive' })} count={counts.archive} icon={<Archive />} label={t('nb.archive')} />
             <Chip active={view.kind === 'trash'} onClick={() => go({ kind: 'trash' })} count={counts.trash} icon={<Trash2 />} label={t('nb.trash')} />
@@ -916,7 +952,9 @@ function Empty({ view, query, onNew }: { view: View; query: string; onNew: () =>
         ? t('nb.emptyTrash')
         : view.kind === 'label'
           ? t('nb.emptyLabel')
-          : t('nb.emptyNotes')
+          : view.kind === 'reminders'
+            ? t('rem.empty')
+            : t('nb.emptyNotes')
   return (
     <div className="mt-24 flex flex-col items-center gap-4 text-center">
       <p className="max-w-sm text-muted-foreground">{text}</p>

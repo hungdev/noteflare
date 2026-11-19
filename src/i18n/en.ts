@@ -139,6 +139,7 @@ export const en = {
   'bk.dailyRestore': "Restore",
   'bk.dailyDownload': "Download",
   'nb.language': 'Language',
+  'nb.import': 'Import',
   'nb.importFolder': 'Import a Markdown folder…',
   'nb.importFiles': 'Import Markdown files…',
   'nb.importKeep': 'Import from Google Keep…',
@@ -450,6 +451,21 @@ export const en = {
   'kb.continue': "Next list item (on an empty item, end the list)",
   'kb.indent': "Indent a list item (Shift+Tab: outdent)",
   'kb.checklist': "Turn lines into a checklist",
+
+  'rem.set': 'Remind me',
+  'rem.laterToday': 'Later today',
+  'rem.tomorrow': 'Tomorrow morning',
+  'rem.nextWeek': 'Next week',
+  'rem.pick': 'Pick a date and time…',
+  'rem.ok': 'Set',
+  'rem.remove': 'Remove reminder',
+  'rem.done': 'Done',
+  'rem.overdue': 'Overdue',
+  'rem.view': 'Reminders',
+  'rem.empty': 'Notes with a reminder show up here',
+  'rem.due': 'Reminder',
+  'rem.open': 'Open',
+  'rem.untitled': 'Untitled note',
 } as const
 
 export type MessageKey = keyof typeof en
